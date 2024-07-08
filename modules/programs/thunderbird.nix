@@ -21,6 +21,10 @@ let
   else
     thunderbirdConfigPath;
 
+  # The extensions path shared by all profiles; might not be supported
+  # by future Thunderbird versions.
+  extensionPath = "extensions/{3550f703-e582-4d05-9a08-453d09bdfdc6}";
+
   profilesWithId =
     imap0 (i: v: v // { id = toString i; }) (attrValues cfg.profiles);
 
@@ -203,6 +207,36 @@ in {
                 '';
               };
 
+              extensions = mkOption {
+                type = types.listOf types.package;
+                default = [ ];
+                example = literalExpression ''
+                  with pkgs.nur.repos.muggenhor.thunderbird-addons; [
+                    cardbook
+                  ]
+                '';
+                description = ''
+                  List of Thunderbird add-on packages to install for this profile.
+                  Some pre-packaged add-ons are accessible from the
+                  [Nix User Repository](https://github.com/nix-community/NUR).
+                  Once you have NUR installed run
+
+                  ```console
+                  $ nix-env -f '<nixpkgs>' -qaP -A nur.repos.muggenhor.thunderbird-addons
+                  ```
+
+                  to list the available Thunderbird add-ons.
+
+                  Note that it is necessary to manually enable these extensions
+                  inside Thunderbird after the first installation.
+
+                  To automatically enable extensions add
+                  `"extensions.autoDisableScopes" = 0;`
+                  to
+                  [{option}`programs.thunderbird.profiles.<profile>.settings`](#opt-programs.thunderbird.profiles._name_.settings)
+                '';
+              };
+
               extraConfig = mkOption {
                 type = types.lines;
                 default = "";
@@ -378,6 +412,18 @@ in {
         ] ++ (map (a: toThunderbirdAccount a profile) accounts)))
           profile.extraConfig;
       };
+
+      "${thunderbirdProfilesPath}/${name}/extensions" =
+        mkIf (profile.extensions != [ ]) {
+          source = let
+            extensionsEnvPkg = pkgs.buildEnv {
+              name = "hm-thunderbird-extensions";
+              paths = profile.extensions;
+            };
+          in "${extensionsEnvPkg}/share/mozilla/${extensionPath}";
+          recursive = true;
+          force = true;
+        };
     }));
   };
 }
