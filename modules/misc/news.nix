@@ -1888,6 +1888,15 @@ in {
           Nix's store) old Home-Manager generations.
         '';
       }
+
+      {
+        time = "2025-05-09T12:00:00+00:00";
+        condition = config.programs.thunderbird.enable;
+        message = ''
+          'programs.thunderbird' now supports declaration of calendars
+          using 'accounts.calendar.accounts'.
+        '';
+      }
     ];
   };
 }
